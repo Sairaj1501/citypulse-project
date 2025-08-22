@@ -1,0 +1,1029 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Citizen Dashboard - CityPulse</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <style>
+    /* Added CSS variables for theme system */
+    :root {
+      --bg-primary: #0f172a;
+      --bg-secondary: #1e293b;
+      --bg-card: #374151;
+      --text-primary: #ffffff;
+      --text-secondary: #d1d5db;
+      --accent-color: #3b82f6;
+      --accent-hover: #2563eb;
+      --border-color: rgba(59, 130, 246, 0.2);
+    }
+
+    [data-theme="light"] {
+      --bg-primary: #f8fafc;
+      --bg-secondary: #e2e8f0;
+      --bg-card: #ffffff;
+      --text-primary: #1e293b;
+      --text-secondary: #475569;
+      --accent-color: #3b82f6;
+      --accent-hover: #2563eb;
+      --border-color: rgba(59, 130, 246, 0.3);
+    }
+
+    * {
+      transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+
+    body {
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      background: linear-gradient(135deg, var(--bg-primary), var(--bg-secondary));
+      color: var(--text-primary);
+      transition: all 0.5s ease;
+    }
+    .dashboard-card {
+      background: var(--bg-card);
+      backdrop-filter: blur(10px);
+      border: 1px solid var(--border-color);
+      border-radius: 1rem;
+      padding: 1.5rem;
+      box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+      transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+      /* Added staggered animation */
+      animation: slideInUp 0.8s ease-out;
+    }
+
+    [data-theme="light"] .dashboard-card {
+      background: var(--bg-card);
+      box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+    }
+
+    .dashboard-card:hover {
+      transform: translateY(-8px) rotateX(2deg);
+      box-shadow: 0 20px 40px rgba(0, 0, 0, 0.4);
+    }
+
+    @keyframes slideInUp {
+      from {
+        opacity: 0;
+        transform: translateY(30px);
+      }
+      to {
+        opacity: 1;
+        transform: translateY(0);
+      }
+    }
+
+    .nav-header {
+      background: rgba(15, 23, 42, 0.9);
+      backdrop-filter: blur(10px);
+      border-bottom: 1px solid var(--border-color);
+      transition: all 0.3s ease;
+    }
+
+    [data-theme="light"] .nav-header {
+      background: rgba(248, 250, 252, 0.9);
+    }
+
+    .btn-primary {
+      background: var(--accent-color);
+      color: white;
+      padding: 0.75rem 1.5rem;
+      border-radius: 0.5rem;
+      border: none;
+      cursor: pointer;
+      font-weight: 600;
+      transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+      position: relative;
+      overflow: hidden;
+    }
+
+    .btn-primary::before {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: -100%;
+      width: 100%;
+      height: 100%;
+      background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.2), transparent);
+      transition: left 0.5s ease;
+    }
+
+    .btn-primary:hover::before {
+      left: 100%;
+    }
+
+    .btn-primary:hover {
+      background: var(--accent-hover);
+      transform: translateY(-3px);
+      box-shadow: 0 10px 25px rgba(59, 130, 246, 0.4);
+    }
+
+    .btn-secondary {
+      background: var(--bg-card);
+      color: var(--text-primary);
+      padding: 0.5rem 1rem;
+      border-radius: 0.375rem;
+      border: 1px solid var(--border-color);
+      cursor: pointer;
+      transition: all 0.3s ease;
+    }
+    .btn-secondary:hover {
+      background: var(--accent-color);
+      color: white;
+      transform: translateY(-2px);
+    }
+
+    /* Added theme toggle button */
+    .theme-toggle {
+      background: var(--bg-card);
+      border: 2px solid var(--border-color);
+      border-radius: 50%;
+      width: 40px;
+      height: 40px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      transition: all 0.3s ease;
+      font-size: 18px;
+    }
+
+    .theme-toggle:hover {
+      transform: rotate(180deg) scale(1.1);
+      box-shadow: 0 0 20px var(--accent-color);
+    }
+
+    .status-badge {
+      padding: 0.25rem 0.75rem;
+      border-radius: 9999px;
+      font-size: 0.75rem;
+      font-weight: 600;
+      /* Added pulse animation for active badges */
+      animation: badgePulse 2s infinite;
+    }
+
+    @keyframes badgePulse {
+      0%, 100% { transform: scale(1); }
+      50% { transform: scale(1.05); }
+    }
+
+    .status-pending { background: #f59e0b; color: #000; }
+    .status-progress { background: #3b82f6; }
+    .status-resolved { background: #10b981; }
+    .alert-urgent { 
+      border-left: 4px solid #ef4444; 
+      animation: urgentGlow 1.5s ease-in-out infinite alternate;
+    }
+    .alert-warning { border-left: 4px solid #f59e0b; }
+    .alert-info { border-left: 4px solid #3b82f6; }
+
+    @keyframes urgentGlow {
+      from { box-shadow: 0 0 5px rgba(239, 68, 68, 0.3); }
+      to { box-shadow: 0 0 20px rgba(239, 68, 68, 0.6); }
+    }
+
+    /* Added floating action icons */
+    .action-icon {
+      font-size: 3rem;
+      animation: bounce 2s infinite;
+    }
+
+    @keyframes bounce {
+      0%, 20%, 50%, 80%, 100% { transform: translateY(0); }
+      40% { transform: translateY(-10px); }
+      60% { transform: translateY(-5px); }
+    }
+
+    /* Added modal animations */
+    .modal-enter {
+      animation: modalSlideIn 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+
+    @keyframes modalSlideIn {
+      from {
+        opacity: 0;
+        transform: scale(0.9) translateY(-20px);
+      }
+      to {
+        opacity: 1;
+        transform: scale(1) translateY(0);
+      }
+    }
+
+    /* Added scroll animations */
+    .scroll-animate {
+      opacity: 0;
+      transform: translateY(30px);
+      transition: all 0.8s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+
+    .scroll-animate.visible {
+      opacity: 1;
+      transform: translateY(0);
+    }
+
+    /* Added notification system styles */
+    .notification-container {
+      position: fixed;
+      top: 20px;
+      right: 20px;
+      z-index: 1000;
+      max-width: 400px;
+    }
+
+    .notification {
+      background: var(--bg-card);
+      border: 1px solid var(--border-color);
+      border-radius: 0.75rem;
+      padding: 1rem;
+      margin-bottom: 0.75rem;
+      box-shadow: 0 10px 25px rgba(0, 0, 0, 0.3);
+      transform: translateX(400px);
+      opacity: 0;
+      transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+
+    .notification.show {
+      transform: translateX(0);
+      opacity: 1;
+    }
+
+    .notification.success { border-left: 4px solid #10b981; }
+    .notification.warning { border-left: 4px solid #f59e0b; }
+    .notification.error { border-left: 4px solid #ef4444; }
+    .notification.info { border-left: 4px solid #3b82f6; }
+
+    /* Added leaderboard styles */
+    .leaderboard-item {
+      display: flex;
+      align-items: center;
+      padding: 1rem;
+      background: var(--bg-secondary);
+      border-radius: 0.5rem;
+      margin-bottom: 0.75rem;
+      transition: all 0.3s ease;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .leaderboard-item:hover {
+      transform: translateX(5px);
+      box-shadow: 0 5px 15px rgba(59, 130, 246, 0.3);
+    }
+
+    .leaderboard-rank {
+      font-size: 1.5rem;
+      font-weight: bold;
+      margin-right: 1rem;
+      min-width: 40px;
+    }
+
+    .rank-1 { color: #ffd700; }
+    .rank-2 { color: #c0c0c0; }
+    .rank-3 { color: #cd7f32; }
+
+    .credit-badge {
+      background: linear-gradient(45deg, #3b82f6, #1d4ed8);
+      color: white;
+      padding: 0.25rem 0.75rem;
+      border-radius: 9999px;
+      font-size: 0.75rem;
+      font-weight: 600;
+      animation: creditPulse 2s infinite;
+    }
+
+    @keyframes creditPulse {
+      0%, 100% { transform: scale(1); box-shadow: 0 0 0 0 rgba(59, 130, 246, 0.7); }
+      50% { transform: scale(1.05); box-shadow: 0 0 0 10px rgba(59, 130, 246, 0); }
+    }
+  </style>
+</head>
+<body data-theme="dark">
+  <!-- Added notification container -->
+  <div id="notificationContainer" class="notification-container"></div>
+
+  <!-- Navigation Header -->
+  <nav class="nav-header p-4 sticky top-0 z-50">
+    <div class="flex items-center justify-between max-w-7xl mx-auto">
+      <div class="flex items-center space-x-4">
+        <!-- Made CityPulse title a link back to home -->
+        <a href="index.html" class="text-2xl font-bold text-blue-400 hover:text-blue-300">CityPulse</a>
+        <span class="text-gray-300">Citizen Portal</span>
+      </div>
+      <div class="flex items-center space-x-4">
+        <!-- Added theme toggle button -->
+        <button class="theme-toggle" onclick="toggleTheme()" title="Toggle theme">
+          <span id="theme-icon">🌙</span>
+        </button>
+        <!-- Added navigation links to other sections -->
+        <a href="index.html" class="text-sm text-gray-300 hover:text-white">Home</a>
+        <a href="admin-dashboard.html" class="text-sm text-gray-300 hover:text-white">Admin Portal</a>
+        <span class="text-sm text-gray-300">Welcome, John Doe</span>
+        <button class="btn-secondary">Settings</button>
+        <a href="login.html" class="btn-secondary">Logout</a>
+      </div>
+    </div>
+  </nav>
+
+  <div class="max-w-7xl mx-auto p-6">
+    <!-- Added user stats and credits section -->
+    <div class="mb-8 scroll-animate">
+      <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
+        <div class="dashboard-card text-center">
+          <div class="text-2xl font-bold text-blue-400" id="userCredits">245</div>
+          <div class="text-sm text-gray-300">Credits Earned</div>
+        </div>
+        <div class="dashboard-card text-center">
+          <div class="text-2xl font-bold text-green-400" id="reportsSubmitted">12</div>
+          <div class="text-sm text-gray-300">Reports Submitted</div>
+        </div>
+        <div class="dashboard-card text-center">
+          <div class="text-2xl font-bold text-yellow-400" id="reportsResolved">8</div>
+          <div class="text-sm text-gray-300">Issues Resolved</div>
+        </div>
+        <div class="dashboard-card text-center">
+          <div class="text-2xl font-bold text-purple-400" id="userRank">#3</div>
+          <div class="text-sm text-gray-300">City Rank</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Quick Actions Section -->
+    <div class="mb-8 scroll-animate">
+      <h2 class="text-2xl font-bold mb-4">Quick Actions</h2>
+      <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+        <div class="dashboard-card text-center" style="animation-delay: 0.1s;">
+          <div class="action-icon mb-3">📍</div>
+          <h3 class="text-lg font-semibold mb-2">Report Issue</h3>
+          <p class="text-gray-300 text-sm mb-4">Report potholes, broken lights, or other city issues</p>
+          <button onclick="openReportModal()" class="btn-primary w-full">Report Now</button>
+        </div>
+        <div class="dashboard-card text-center" style="animation-delay: 0.2s;">
+          <div class="action-icon mb-3" style="animation-delay: 0.5s;">🗺️</div>
+          <h3 class="text-lg font-semibold mb-2">View Map</h3>
+          <p class="text-gray-300 text-sm mb-4">Explore city projects and reported issues</p>
+          <button class="btn-primary w-full">Open Map</button>
+        </div>
+        <div class="dashboard-card text-center" style="animation-delay: 0.3s;">
+          <div class="action-icon mb-3" style="animation-delay: 1s;">📊</div>
+          <h3 class="text-lg font-semibold mb-2">City Stats</h3>
+          <p class="text-gray-300 text-sm mb-4">View city improvement statistics</p>
+          <button class="btn-primary w-full">View Stats</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Recent Alerts Section -->
+    <div class="mb-8 scroll-animate">
+      <h2 class="text-2xl font-bold mb-4">Recent Alerts</h2>
+      <div class="space-y-4">
+        <div class="dashboard-card alert-urgent">
+          <div class="flex items-center justify-between">
+            <div>
+              <h3 class="font-semibold text-red-400">Road Closure - Main St</h3>
+              <p class="text-gray-300 text-sm">Emergency water main repair in progress</p>
+              <span class="text-xs text-gray-400">2 hours ago</span>
+            </div>
+            <span class="status-badge status-pending">Active</span>
+          </div>
+        </div>
+        <div class="dashboard-card alert-warning">
+          <div class="flex items-center justify-between">
+            <div>
+              <h3 class="font-semibold text-yellow-400">Traffic Delays - Highway 101</h3>
+              <p class="text-gray-300 text-sm">Construction causing 15-minute delays</p>
+              <span class="text-xs text-gray-400">4 hours ago</span>
+            </div>
+            <span class="status-badge status-progress">Ongoing</span>
+          </div>
+        </div>
+        <div class="dashboard-card alert-info">
+          <div class="flex items-center justify-between">
+            <div>
+              <h3 class="font-semibold text-blue-400">Park Maintenance - Central Park</h3>
+              <p class="text-gray-300 text-sm">Scheduled maintenance this weekend</p>
+              <span class="text-xs text-gray-400">1 day ago</span>
+            </div>
+            <span class="status-badge status-progress">Scheduled</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- My Reports Section -->
+    <div class="mb-8 scroll-animate">
+      <h2 class="text-2xl font-bold mb-4">My Reports</h2>
+      <div class="dashboard-card">
+        <div class="space-y-4">
+          <div class="flex items-center justify-between p-4 bg-gray-800 rounded-lg">
+            <div>
+              <h3 class="font-semibold">Pothole on Oak Street</h3>
+              <p class="text-gray-300 text-sm">Large pothole causing vehicle damage</p>
+              <span class="text-xs text-gray-400">Reported 3 days ago</span>
+            </div>
+            <span class="status-badge status-progress">In Progress</span>
+          </div>
+          <div class="flex items-center justify-between p-4 bg-gray-800 rounded-lg">
+            <div>
+              <h3 class="font-semibold">Broken Streetlight</h3>
+              <p class="text-gray-300 text-sm">Light out on Pine Ave intersection</p>
+              <span class="text-xs text-gray-400">Reported 1 week ago</span>
+            </div>
+            <span class="status-badge status-resolved">Resolved</span>
+          </div>
+          <div class="flex items-center justify-between p-4 bg-gray-800 rounded-lg">
+            <div>
+              <h3 class="font-semibold">Graffiti Removal</h3>
+              <p class="text-gray-300 text-sm">Graffiti on bus stop shelter</p>
+              <span class="text-xs text-gray-400">Reported 2 weeks ago</span>
+            </div>
+            <span class="status-badge status-pending">Pending</span>
+          </div>
+        </div>
+      </div>
+    </div>
+      <!-- Update the report modal form -->
+<form id="reportForm" onsubmit="submitReport(event)">
+  <div class="mb-4">
+    <label class="block text-sm font-medium mb-2">Issue Type</label>
+    <select name="category" class="w-full p-3 bg-gray-800 border border-gray-600 rounded-lg text-white" required>
+      <option value="">Select issue type</option>
+      <option value="Pothole">Pothole</option>
+      <option value="Broken Streetlight">Broken Streetlight</option>
+      <option value="Graffiti">Graffiti</option>
+      <option value="Trash/Litter">Trash/Litter</option>
+      <option value="Traffic Signal">Traffic Signal</option>
+      <option value="Other">Other</option>
+    </select>
+  </div>
+  
+  <div class="mb-4">
+    <label class="block text-sm font-medium mb-2">Location</label>
+    <div class="flex space-x-2">
+      <input type="text" name="address" class="flex-1 p-3 bg-gray-800 border border-gray-600 rounded-lg text-white" 
+             placeholder="Street address" id="location-input">
+      <button type="button" onclick="getLocation()" class="px-4 bg-blue-600 rounded-lg">📍</button>
+    </div>
+    <input type="hidden" name="latitude" id="latitude">
+    <input type="hidden" name="longitude" id="longitude">
+  </div>
+
+  <div class="mb-4">
+    <label class="block text-sm font-medium mb-2">Description</label>
+    <textarea name="description" class="w-full p-3 bg-gray-800 border border-gray-600 rounded-lg text-white h-24" 
+              placeholder="Describe the issue in detail" required></textarea>
+  </div>
+  
+  <div class="mb-6">
+    <label class="block text-sm font-medium mb-2">Photo (Optional but earns +5 credits)</label>
+    <input type="file" name="image" accept="image/*" class="w-full p-3 bg-gray-800 border border-gray-600 rounded-lg text-white">
+  </div>
+  
+  <div class="flex space-x-3">
+    <button type="submit" class="btn-primary flex-1">Submit Report +20 Credits</button>
+    <button type="button" onclick="closeReportModal()" class="btn-secondary">Cancel</button>
+  </div>
+</form>
+
+<script>
+// Get user's current location
+function getLocation() {
+  if (navigator.geolocation) {
+    navigator.geolocation.getCurrentPosition(
+      (position) => {
+        document.getElementById('latitude').value = position.coords.latitude;
+        document.getElementById('longitude').value = position.coords.longitude;
+        
+        // Reverse geocode to get address
+        fetch(`https://api.geoapify.com/v1/geocode/reverse?lat=${position.coords.latitude}&lon=${position.coords.longitude}&apiKey=YOUR_API_KEY`)
+          .then(response => response.json())
+          .then(data => {
+            if (data.features.length > 0) {
+              document.getElementById('location-input').value = data.features[0].properties.formatted;
+            }
+          });
+      },
+      (error) => {
+        alert('Could not get location. Please enter address manually.');
+      }
+    );
+  } else {
+    alert('Geolocation is not supported by this browser.');
+  }
+}
+
+// Handle pending report from map click
+function checkPendingReport() {
+  const pendingReport = localStorage.getItem('pendingReport');
+  if (pendingReport) {
+    const report = JSON.parse(pendingReport);
+    document.getElementById('latitude').value = report.latitude;
+    document.getElementById('longitude').value = report.longitude;
+    document.querySelector('select[name="category"]').value = report.type;
+    localStorage.removeItem('pendingReport');
+  }
+}
+</script>
+    <!-- Added Leaderboard Section -->
+    <div class="mb-8 scroll-animate">
+      <h2 class="text-2xl font-bold mb-4">🏆 Community Leaderboard</h2>
+      <div class="dashboard-card">
+        <div class="mb-4">
+          <p class="text-gray-300 text-sm">Top contributors this month - Earn credits for reporting issues and helping improve our city!</p>
+        </div>
+        <div id="leaderboardList">
+          <div class="leaderboard-item">
+            <div class="leaderboard-rank rank-1">1</div>
+            <div class="flex-1">
+              <div class="font-semibold">Sarah Johnson</div>
+              <div class="text-sm text-gray-300">28 reports • 15 resolved</div>
+            </div>
+            <div class="credit-badge">420 credits</div>
+          </div>
+          <div class="leaderboard-item">
+            <div class="leaderboard-rank rank-2">2</div>
+            <div class="flex-1">
+              <div class="font-semibold">Mike Chen</div>
+              <div class="text-sm text-gray-300">22 reports • 18 resolved</div>
+            </div>
+            <div class="credit-badge">385 credits</div>
+          </div>
+          <div class="leaderboard-item" style="border: 2px solid var(--accent-color);">
+            <div class="leaderboard-rank rank-3">3</div>
+            <div class="flex-1">
+              <div class="font-semibold">John Doe (You)</div>
+              <div class="text-sm text-gray-300">12 reports • 8 resolved</div>
+            </div>
+            <div class="credit-badge">245 credits</div>
+          </div>
+          <div class="leaderboard-item">
+            <div class="leaderboard-rank">4</div>
+            <div class="flex-1">
+              <div class="font-semibold">Emma Wilson</div>
+              <div class="text-sm text-gray-300">18 reports • 12 resolved</div>
+            </div>
+            <div class="credit-badge">230 credits</div>
+          </div>
+          <div class="leaderboard-item">
+            <div class="leaderboard-rank">5</div>
+            <div class="flex-1">
+              <div class="font-semibold">David Rodriguez</div>
+              <div class="text-sm text-gray-300">15 reports • 10 resolved</div>
+            </div>
+            <div class="credit-badge">195 credits</div>
+          </div>
+        </div>
+        <div class="mt-4 p-3 bg-blue-900 bg-opacity-30 rounded-lg">
+          <h4 class="font-semibold text-blue-400 mb-2">🎁 Reward System</h4>
+          <div class="text-sm text-gray-300 space-y-1">
+            <div>• Report Issue: +20 credits</div>
+            <div>• Issue Resolved: +15 bonus credits</div>
+            <div>• Photo Evidence: +5 extra credits</div>
+            <div>• Monthly Top 3: Special city recognition!</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Report Issue Modal -->
+  <div id="reportModal" class="fixed inset-0 bg-black bg-opacity-50 hidden items-center justify-center z-50">
+    <div class="dashboard-card max-w-md w-full mx-4 modal-enter">
+      <div class="flex items-center justify-between mb-4">
+        <h3 class="text-xl font-bold">Report New Issue</h3>
+        <button onclick="closeReportModal()" class="text-gray-400 hover:text-white">✕</button>
+      </div>
+<!-- Replace the existing report form with this -->
+<form id="reportForm">
+  <div class="mb-4">
+    <label class="block text-sm font-medium mb-2">Issue Type</label>
+    <select name="category" class="w-full p-3 bg-gray-800 border border-gray-600 rounded-lg text-white" required>
+      <option value="">Select issue type</option>
+      <option value="Pothole">Pothole</option>
+      <option value="Broken Streetlight">Broken Streetlight</option>
+      <option value="Graffiti">Graffiti</option>
+      <option value="Trash/Litter">Trash/Litter</option>
+      <option value="Traffic Signal">Traffic Signal</option>
+      <option value="Other">Other</option>
+    </select>
+  </div>
+  
+  <div class="mb-4">
+    <label class="block text-sm font-medium mb-2">Location</label>
+    <div class="flex space-x-2">
+      <input type="text" name="address" class="flex-1 p-3 bg-gray-800 border border-gray-600 rounded-lg text-white" 
+             placeholder="Street address" id="location-input">
+      <button type="button" onclick="getLocation()" class="px-4 bg-blue-600 rounded-lg">📍</button>
+    </div>
+    <input type="hidden" name="latitude" id="latitude">
+    <input type="hidden" name="longitude" id="longitude">
+  </div>
+
+  <div class="mb-4">
+    <label class="block text-sm font-medium mb-2">Description</label>
+    <textarea name="description" class="w-full p-3 bg-gray-800 border border-gray-600 rounded-lg text-white h-24" 
+              placeholder="Describe the issue in detail" required></textarea>
+  </div>
+  
+  <div class="mb-6">
+    <label class="block text-sm font-medium mb-2">Photo Evidence</label>
+    <input type="file" name="image" accept="image/*" class="hidden" id="photo-input" onchange="previewImage()">
+    <label for="photo-input" class="cursor-pointer border-2 border-dashed border-gray-600 rounded-lg p-4 text-center block hover:border-blue-500">
+      <div class="text-2xl mb-2">📸</div>
+      <p>Click to upload photo</p>
+      <p class="text-sm text-gray-400">+5 bonus credits</p>
+    </label>
+    <div id="image-preview" class="hidden mt-2">
+      <img id="preview" class="w-32 h-32 object-cover rounded-lg">
+    </div>
+  </div>
+  
+  <div class="flex space-x-3">
+    <button type="submit" class="btn-primary flex-1">Submit Report +20 Credits</button>
+    <button type="button" onclick="closeReportModal()" class="btn-secondary">Cancel</button>
+  </div>
+</form>
+
+<!-- Add this script to your existing JavaScript in citizen-dashboard.html -->
+<script>
+// Get user's current location
+function getLocation() {
+  if (navigator.geolocation) {
+    navigator.geolocation.getCurrentPosition(
+      (position) => {
+        document.getElementById('latitude').value = position.coords.latitude;
+        document.getElementById('longitude').value = position.coords.longitude;
+        
+        // For demo purposes, we'll use a mock address
+        const addresses = [
+          "123 Main Street",
+          "456 Oak Avenue", 
+          "789 Pine Road",
+          "321 Elm Boulevard"
+        ];
+        const randomAddress = addresses[Math.floor(Math.random() * addresses.length)];
+        document.getElementById('location-input').value = randomAddress;
+        
+        showNotification({
+          title: 'Location Found!',
+          body: 'Address filled automatically'
+        }, 'success');
+      },
+      (error) => {
+        showNotification({
+          title: 'Location Error',
+          body: 'Please enter address manually'
+        }, 'error');
+      }
+    );
+  } else {
+    alert('Geolocation is not supported by this browser.');
+  }
+}
+
+// Preview uploaded image
+function previewImage() {
+  const input = document.getElementById('photo-input');
+  const preview = document.getElementById('preview');
+  const previewContainer = document.getElementById('image-preview');
+  
+  if (input.files && input.files[0]) {
+    const reader = new FileReader();
+    reader.onload = function(e) {
+      preview.src = e.target.result;
+      previewContainer.classList.remove('hidden');
+    }
+    reader.readAsDataURL(input.files[0]);
+  }
+}
+
+// Handle pending report from map click
+function checkPendingReport() {
+  const pendingReport = localStorage.getItem('pendingReport');
+  if (pendingReport) {
+    const report = JSON.parse(pendingReport);
+    document.getElementById('latitude').value = report.latitude;
+    document.getElementById('longitude').value = report.longitude;
+    
+    const categorySelect = document.querySelector('select[name="category"]');
+    for (let option of categorySelect.options) {
+      if (option.value.toLowerCase().includes(report.type)) {
+        option.selected = true;
+        break;
+      }
+    }
+    
+    localStorage.removeItem('pendingReport');
+    openReportModal();
+  }
+}
+
+// Call this when the page loads
+document.addEventListener('DOMContentLoaded', function() {
+  checkPendingReport();
+});
+</script>
+
+  <script>
+    /* Added notification system */
+    function showNotification(message, type = 'info', duration = 5000) {
+      const container = document.getElementById('notificationContainer');
+      const notification = document.createElement('div');
+      notification.className = `notification ${type}`;
+      
+      const icons = {
+        success: '✅',
+        warning: '⚠️',
+        error: '❌',
+        info: 'ℹ️'
+      };
+      
+      notification.innerHTML = `
+        <div class="flex items-start">
+          <div class="text-lg mr-3">${icons[type]}</div>
+          <div class="flex-1">
+            <div class="font-semibold">${message.title}</div>
+            <div class="text-sm text-gray-300">${message.body}</div>
+          </div>
+          <button onclick="this.parentElement.parentElement.remove()" class="text-gray-400 hover:text-white ml-2">✕</button>
+        </div>
+      `;
+      
+      container.appendChild(notification);
+      
+      // Trigger animation
+      setTimeout(() => notification.classList.add('show'), 100);
+      
+      // Auto remove
+      setTimeout(() => {
+        notification.classList.remove('show');
+        setTimeout(() => notification.remove(), 400);
+      }, duration);
+    }
+
+    /* Added credit and stats management */
+    let userStats = {
+      credits: 245,
+      reportsSubmitted: 12,
+      reportsResolved: 8,
+      rank: 3
+    };
+
+    function updateUserStats() {
+      document.getElementById('userCredits').textContent = userStats.credits;
+      document.getElementById('reportsSubmitted').textContent = userStats.reportsSubmitted;
+      document.getElementById('reportsResolved').textContent = userStats.reportsResolved;
+      document.getElementById('userRank').textContent = `#${userStats.rank}`;
+    }
+
+    function awardCredits(amount, reason) {
+      userStats.credits += amount;
+      updateUserStats();
+      
+      showNotification({
+        title: `+${amount} Credits Earned!`,
+        body: reason
+      }, 'success');
+    }
+
+    /* Added theme toggle functionality */
+    function toggleTheme() {
+      const body = document.body;
+      const themeIcon = document.getElementById('theme-icon');
+      const currentTheme = body.getAttribute('data-theme');
+      
+      if (currentTheme === 'dark') {
+        body.setAttribute('data-theme', 'light');
+        themeIcon.textContent = '☀️';
+        localStorage.setItem('theme', 'light');
+      } else {
+        body.setAttribute('data-theme', 'dark');
+        themeIcon.textContent = '🌙';
+        localStorage.setItem('theme', 'dark');
+      }
+    }
+
+    document.addEventListener('DOMContentLoaded', function() {
+      const savedTheme = localStorage.getItem('theme') || 'dark';
+      const themeIcon = document.getElementById('theme-icon');
+      
+      document.body.setAttribute('data-theme', savedTheme);
+      themeIcon.textContent = savedTheme === 'light' ? '☀️' : '🌙';
+
+      /* Added scroll animation observer */
+      const observerOptions = {
+        threshold: 0.1,
+        rootMargin: '0px 0px -50px 0px'
+      };
+
+      const observer = new IntersectionObserver(function(entries) {
+        entries.forEach(entry => {
+          if (entry.isIntersecting) {
+            entry.target.classList.add('visible');
+          }
+        });
+      }, observerOptions);
+
+      document.querySelectorAll('.scroll-animate').forEach(el => {
+        observer.observe(el);
+      });
+
+      /* Show welcome notification */
+      setTimeout(() => {
+        showNotification({
+          title: 'Welcome back, John!',
+          body: 'You have 2 new updates on your reports.'
+        }, 'info');
+      }, 1000);
+
+      /* Simulate random notifications */
+      setInterval(() => {
+        const notifications = [
+          { title: 'New Alert', body: 'Road closure on Main Street has been updated.', type: 'warning' },
+          { title: 'Report Update', body: 'Your pothole report is now in progress!', type: 'info' },
+          { title: 'Achievement Unlocked', body: 'You\'ve earned the "Community Helper" badge!', type: 'success' }
+        ];
+        
+        const randomNotif = notifications[Math.floor(Math.random() * notifications.length)];
+        showNotification({
+          title: randomNotif.title,
+          body: randomNotif.body
+        }, randomNotif.type);
+      }, 30000); // Every 30 seconds
+    });
+
+    function openReportModal() {
+      const modal = document.getElementById('reportModal');
+      modal.classList.remove('hidden');
+      modal.classList.add('flex');
+      modal.querySelector('.dashboard-card').classList.add('modal-enter');
+    }
+
+    // Real-time notification system
+function checkForNewNotifications() {
+  // Simulate receiving notifications
+  const notifications = [
+    {
+      id: Date.now(),
+      title: 'New Alert Posted',
+      message: 'Road construction on Main Street starts tomorrow',
+      type: 'info'
+    },
+    {
+      id: Date.now() + 1,
+      title: 'Report Updated',
+      message: 'Your pothole report is now In Progress',
+      type: 'success'
+    }
+  ];
+  
+  notifications.forEach(notification => {
+    if (!localStorage.getItem(`notification_${notification.id}`)) {
+      showNotification({
+        title: notification.title,
+        body: notification.message
+      }, notification.type);
+      
+      localStorage.setItem(`notification_${notification.id}`, 'seen');
+    }
+  });
+}
+
+// Check for notifications every 30 seconds
+setInterval(checkForNewNotifications, 30000);
+
+// Check immediately when page loads
+setTimeout(checkForNewNotifications, 2000);
+
+// Enhanced leaderboard with real data
+async function updateLeaderboard() {
+  try {
+    // Simulate API call - replace with actual API call in real implementation
+    const leaderboardData = [
+      {rank: 1, username: 'Sarah Johnson', reports: 28, resolved: 15, credits: 420},
+      {rank: 2, username: 'Mike Chen', reports: 22, resolved: 18, credits: 385},
+      {rank: 3, username: 'John Doe', reports: 12, resolved: 8, credits: 245},
+      {rank: 4, username: 'Emma Wilson', reports: 18, resolved: 12, credits: 230},
+      {rank: 5, username: 'David Rodriguez', reports: 15, resolved: 10, credits: 195}
+    ];
+    
+    const leaderboardList = document.getElementById('leaderboardList');
+    if (leaderboardList) {
+      leaderboardList.innerHTML = leaderboardData.map(user => `
+        <div class="leaderboard-item ${user.rank <= 3 ? 'highlight' : ''}">
+          <div class="leaderboard-rank ${user.rank <= 3 ? 'rank-' + user.rank : ''}">${user.rank}</div>
+          <div class="flex-1">
+            <div class="font-semibold">${user.username}</div>
+            <div class="text-sm text-gray-300">${user.reports} reports • ${user.resolved} resolved</div>
+          </div>
+          <div class="credit-badge">${user.credits} credits</div>
+        </div>
+      `).join('');
+    }
+  } catch (error) {
+    console.error('Error loading leaderboard:', error);
+  }
+}
+
+// Call this when the page loads
+document.addEventListener('DOMContentLoaded', function() {
+  updateLeaderboard();
+});
+
+    function closeReportModal() {
+      document.getElementById('reportModal').classList.add('hidden');
+      document.getElementById('reportModal').classList.remove('flex');
+    }
+
+    document.getElementById('reportForm').addEventListener('submit', function(e) {
+      e.preventDefault();
+      
+      /* Award credits for report submission */
+      userStats.reportsSubmitted++;
+      awardCredits(20, 'Thank you for reporting a city issue!');
+      
+      // Check if photo was uploaded for bonus credits
+      const photoInput = this.querySelector('input[type="file"]');
+      if (photoInput.files.length > 0) {
+        awardCredits(5, 'Bonus credits for providing photo evidence!');
+      }
+      
+      showNotification({
+        title: 'Report Submitted Successfully!',
+        body: 'You will receive updates via email and earn bonus credits when resolved.'
+      }, 'success');
+      
+      closeReportModal();
+      this.reset();
+    });
+
+    // Close modal when clicking outside
+    document.getElementById('reportModal').addEventListener('click', function(e) {
+      if (e.target === this) {
+        closeReportModal();
+      }
+    });
+  </script>
+  <script>
+// Enhanced chatbot function
+async function sendChatbotMessage() {
+  const input = document.getElementById('chat-input');
+  const message = input.value.trim();
+  
+  if (!message) return;
+  
+  // Add user message
+  const messages = document.getElementById('chat-messages');
+  const userMsg = document.createElement('div');
+  userMsg.innerHTML = `<strong>You:</strong> ${message}`;
+  userMsg.className = 'mb-2 text-right';
+  messages.appendChild(userMsg);
+  
+  input.value = '';
+  
+  // AI response logic
+  let response = '';
+  const lowerMessage = message.toLowerCase();
+  
+  if (lowerMessage.includes('report') || lowerMessage.includes('issue')) {
+    response = 'To report an issue, click the "Report Issue" button. You can report potholes, broken streetlights, graffiti, or other city issues.';
+  } 
+  else if (lowerMessage.includes('credit') || lowerMessage.includes('point')) {
+    response = 'You earn 20 credits for each report submitted! Add a photo for +5 bonus credits. When your report gets resolved, you get +15 more credits!';
+  }
+  else if (lowerMessage.includes('alert') || lowerMessage.includes('notification')) {
+    response = 'City alerts show road closures, construction, and other important updates. Check the Alerts section for current information.';
+  }
+  else if (lowerMessage.includes('hello') || lowerMessage.includes('hi')) {
+    response = 'Hello! I\'m CityBot 🤖 How can I help you with CityPulse today?';
+  }
+  else if (lowerMessage.includes('thank')) {
+    response = 'You\'re welcome! Happy to help make our city better!';
+  }
+  else {
+    response = 'I can help you report issues, understand the credit system, or check city alerts. What would you like to know?';
+  }
+  
+  // Simulate AI thinking
+  setTimeout(() => {
+    const botMsg = document.createElement('div');
+    botMsg.innerHTML = `<strong>CityBot:</strong> ${response}`;
+    botMsg.className = 'mb-2';
+    messages.appendChild(botMsg);
+    messages.scrollTop = messages.scrollHeight;
+  }, 1000);
+}
+
+// Press Enter to send message
+document.addEventListener('DOMContentLoaded', function() {
+  const chatInput = document.getElementById('chat-input');
+  if (chatInput) {
+    chatInput.addEventListener('keypress', function(e) {
+      if (e.key === 'Enter') {
+        sendChatbotMessage();
+      }
+    });
+  }
+});
+</script>
+</body>
+</html>

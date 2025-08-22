@@ -1,0 +1,405 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Login - CityPulse</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <style>
+    :root {
+      --bg-primary: #0f172a;
+      --bg-secondary: #1e293b;
+      --bg-card: #374151;
+      --text-primary: #ffffff;
+      --text-secondary: #d1d5db;
+      --accent-color: #3b82f6;
+      --accent-hover: #2563eb;
+      --border-color: rgba(59, 130, 246, 0.2);
+    }
+
+    [data-theme="light"] {
+      --bg-primary: #f8fafc;
+      --bg-secondary: #e2e8f0;
+      --bg-card: #ffffff;
+      --text-primary: #1e293b;
+      --text-secondary: #475569;
+      --accent-color: #3b82f6;
+      --accent-hover: #2563eb;
+      --border-color: rgba(59, 130, 246, 0.3);
+    }
+
+    * {
+      transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+
+    body {
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      background: linear-gradient(135deg, var(--bg-primary), var(--bg-secondary));
+      color: var(--text-primary);
+      transition: all 0.5s ease;
+    }
+    .login-container {
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 1rem;
+      animation: fadeInUp 1s ease-out;
+    }
+
+    @keyframes fadeInUp {
+      from {
+        opacity: 0;
+        transform: translateY(30px);
+      }
+      to {
+        opacity: 1;
+        transform: translateY(0);
+      }
+    }
+
+    .login-form {
+      background: rgba(30, 41, 59, 0.8);
+      backdrop-filter: blur(10px);
+      border: 1px solid var(--border-color);
+      border-radius: 1rem;
+      padding: 2rem;
+      width: 100%;
+      max-width: 400px;
+      box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+      transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+      animation: slideInScale 0.8s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+
+    [data-theme="light"] .login-form {
+      background: rgba(255, 255, 255, 0.9);
+      box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+    }
+
+    .login-form:hover {
+      transform: translateY(-5px);
+      box-shadow: 0 20px 40px rgba(0, 0, 0, 0.4);
+    }
+
+    @keyframes slideInScale {
+      from {
+        opacity: 0;
+        transform: scale(0.9) translateY(20px);
+      }
+      to {
+        opacity: 1;
+        transform: scale(1) translateY(0);
+      }
+    }
+
+    .form-input {
+      width: 100%;
+      padding: 0.75rem;
+      margin-bottom: 1rem;
+      background: var(--bg-primary);
+      border: 1px solid var(--border-color);
+      border-radius: 0.5rem;
+      color: var(--text-primary);
+      outline: none;
+      transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+      position: relative;
+    }
+    .form-input:focus {
+      border-color: var(--accent-color);
+      box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.2);
+      transform: translateY(-2px);
+    }
+    .form-input::placeholder {
+      color: var(--text-secondary);
+      opacity: 0.7;
+    }
+
+    .login-btn {
+      width: 100%;
+      padding: 0.75rem;
+      background: var(--accent-color);
+      border: none;
+      border-radius: 0.5rem;
+      color: white;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+      animation: pulse 2s infinite;
+    }
+    .login-btn:hover {
+      background: var(--accent-hover);
+      transform: translateY(-3px);
+      box-shadow: 0 10px 25px rgba(59, 130, 246, 0.4);
+      animation: none;
+    }
+
+    @keyframes pulse {
+      0%, 100% { box-shadow: 0 0 0 0 rgba(59, 130, 246, 0.4); }
+      50% { box-shadow: 0 0 0 10px rgba(59, 130, 246, 0); }
+    }
+
+    .back-link {
+      color: var(--accent-color);
+      text-decoration: none;
+      transition: all 0.3s ease;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .back-link::before {
+      content: '';
+      position: absolute;
+      bottom: 0;
+      left: -100%;
+      width: 100%;
+      height: 2px;
+      background: var(--accent-color);
+      transition: left 0.3s ease;
+    }
+
+    .back-link:hover::before {
+      left: 0;
+    }
+
+    .back-link:hover {
+      color: var(--accent-hover);
+      transform: translateX(5px);
+    }
+
+    .theme-toggle {
+      position: fixed;
+      top: 20px;
+      right: 20px;
+      background: var(--bg-card);
+      border: 2px solid var(--border-color);
+      border-radius: 50%;
+      width: 50px;
+      height: 50px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      transition: all 0.3s ease;
+      font-size: 20px;
+      z-index: 1000;
+      animation: float 3s ease-in-out infinite;
+    }
+
+    .theme-toggle:hover {
+      transform: rotate(180deg) scale(1.1);
+      box-shadow: 0 0 20px var(--accent-color);
+    }
+
+    @keyframes float {
+      0%, 100% { transform: translateY(0px); }
+      50% { transform: translateY(-10px); }
+    }
+
+    .quick-btn {
+      transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+      position: relative;
+      overflow: hidden;
+    }
+
+    .quick-btn::before {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: -100%;
+      width: 100%;
+      height: 100%;
+      background: linear-gradient(90deg, transparent, rgba(59, 130, 246, 0.2), transparent);
+      transition: left 0.5s ease;
+    }
+
+    .quick-btn:hover::before {
+      left: 100%;
+    }
+
+    .quick-btn:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 8px 20px rgba(0, 0, 0, 0.3);
+    }
+  </style>
+</head>
+<body data-theme="dark">
+  <button class="theme-toggle" onclick="toggleTheme()" title="Toggle theme">
+    <span id="theme-icon">🌙</span>
+  </button>
+
+  <div class="login-container">
+    <div class="login-form">
+      <div class="text-center mb-2">
+        <a href="index.html" class="back-link text-sm">← Back to Home</a>
+      </div>
+      
+      <div class="text-center mb-8">
+        <h1 class="text-3xl font-bold text-blue-400 mb-2">CityPulse</h1>
+        <p class="text-gray-300">Sign in to your account</p>
+      </div>
+
+      <form id="loginForm">
+        <div class="mb-4">
+          <label for="email" class="block text-sm font-medium mb-2">Email Address</label>
+          <input 
+            type="email" 
+            id="email" 
+            name="email" 
+            class="form-input" 
+            placeholder="Enter your email"
+            required
+          />
+        </div>
+
+        <div class="mb-6">
+          <label for="password" class="block text-sm font-medium mb-2">Password</label>
+          <input 
+            type="password" 
+            id="password" 
+            name="password" 
+            class="form-input" 
+            placeholder="Enter your password"
+            required
+          />
+        </div>
+
+        <div class="flex items-center justify-between mb-6">
+          <label class="flex items-center">
+            <input type="checkbox" class="mr-2 accent-blue-500" />
+            <span class="text-sm text-gray-300">Remember me</span>
+          </label>
+          <a href="#" class="text-sm back-link">Forgot password?</a>
+        </div>
+
+        <button type="submit" class="login-btn">Sign In</button>
+      </form>
+
+      <div class="mt-6 pt-6 border-t border-gray-600">
+        <p class="text-center text-sm text-gray-300 mb-4">Quick Access</p>
+        <div class="grid grid-cols-2 gap-3">
+          <button onclick="loginAs('citizen')" class="quick-btn px-4 py-2 bg-gray-700 hover:bg-gray-600 rounded-lg text-sm transition">
+            Citizen Portal
+          </button>
+          <button onclick="loginAs('admin')" class="quick-btn px-4 py-2 bg-gray-700 hover:bg-gray-600 rounded-lg text-sm transition">
+            Admin Dashboard
+          </button>
+        </div>
+      </div>
+
+      <div class="text-center mt-6">
+        <p class="text-sm text-gray-400 mb-2">Don't have an account?</p>
+        <a href="index.html" class="back-link text-sm">Learn more about CityPulse</a>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    function toggleTheme() {
+      const body = document.body;
+      const themeIcon = document.getElementById('theme-icon');
+      const currentTheme = body.getAttribute('data-theme');
+      
+      if (currentTheme === 'dark') {
+        body.setAttribute('data-theme', 'light');
+        themeIcon.textContent = '☀️';
+        localStorage.setItem('theme', 'light');
+      } else {
+        body.setAttribute('data-theme', 'dark');
+        themeIcon.textContent = '🌙';
+        localStorage.setItem('theme', 'dark');
+      }
+    }
+
+    document.addEventListener('DOMContentLoaded', function() {
+      const savedTheme = localStorage.getItem('theme') || 'dark';
+      const themeIcon = document.getElementById('theme-icon');
+      
+      document.body.setAttribute('data-theme', savedTheme);
+      themeIcon.textContent = savedTheme === 'light' ? '☀️' : '🌙';
+    });
+
+    document.getElementById('loginForm').addEventListener('submit', function(e) {
+      e.preventDefault();
+      const email = document.getElementById('email').value;
+      const password = document.getElementById('password').value;
+      
+      if (email && password) {
+        alert('Login successful! Redirecting to dashboard...');
+        window.location.href = 'citizen-dashboard.html';
+      }
+    });
+
+    function loginAs(userType) {
+      if (userType === 'citizen') {
+        window.location.href = 'citizen-dashboard.html';
+      } else if (userType === 'admin') {
+        window.location.href = 'admin-dashboard.html';
+      }
+    }
+  </script>
+
+<script>
+// Enhanced chatbot function
+async function sendChatbotMessage() {
+  const input = document.getElementById('chat-input');
+  const message = input.value.trim();
+  
+  if (!message) return;
+  
+  // Add user message
+  const messages = document.getElementById('chat-messages');
+  const userMsg = document.createElement('div');
+  userMsg.innerHTML = `<strong>You:</strong> ${message}`;
+  userMsg.className = 'mb-2 text-right';
+  messages.appendChild(userMsg);
+  
+  input.value = '';
+  
+  // AI response logic
+  let response = '';
+  const lowerMessage = message.toLowerCase();
+  
+  if (lowerMessage.includes('report') || lowerMessage.includes('issue')) {
+    response = 'To report an issue, click the "Report Issue" button. You can report potholes, broken streetlights, graffiti, or other city issues.';
+  } 
+  else if (lowerMessage.includes('credit') || lowerMessage.includes('point')) {
+    response = 'You earn 20 credits for each report submitted! Add a photo for +5 bonus credits. When your report gets resolved, you get +15 more credits!';
+  }
+  else if (lowerMessage.includes('alert') || lowerMessage.includes('notification')) {
+    response = 'City alerts show road closures, construction, and other important updates. Check the Alerts section for current information.';
+  }
+  else if (lowerMessage.includes('hello') || lowerMessage.includes('hi')) {
+    response = 'Hello! I\'m CityBot 🤖 How can I help you with CityPulse today?';
+  }
+  else if (lowerMessage.includes('thank')) {
+    response = 'You\'re welcome! Happy to help make our city better!';
+  }
+  else {
+    response = 'I can help you report issues, understand the credit system, or check city alerts. What would you like to know?';
+  }
+  
+  // Simulate AI thinking
+  setTimeout(() => {
+    const botMsg = document.createElement('div');
+    botMsg.innerHTML = `<strong>CityBot:</strong> ${response}`;
+    botMsg.className = 'mb-2';
+    messages.appendChild(botMsg);
+    messages.scrollTop = messages.scrollHeight;
+  }, 1000);
+}
+
+// Press Enter to send message
+document.addEventListener('DOMContentLoaded', function() {
+  const chatInput = document.getElementById('chat-input');
+  if (chatInput) {
+    chatInput.addEventListener('keypress', function(e) {
+      if (e.key === 'Enter') {
+        sendChatbotMessage();
+      }
+    });
+  }
+});
+</script>
+
+</body>
+</html>

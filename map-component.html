@@ -1,0 +1,457 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CityPulse Interactive Map - OpenStreetMap</title>
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.7.1/dist/leaflet.css" />
+    <script src="https://unpkg.com/leaflet@1.7.1/dist/leaflet.js"></script>
+    <style>
+        body { margin: 0; padding: 0; }
+        #map { position: absolute; top: 0; bottom: 0; width: 100%; }
+        .map-overlay {
+            position: absolute;
+            left: 0;
+            padding: 15px;
+            z-index: 1000;
+            background: rgba(255, 255, 255, 0.95);
+            border-radius: 8px;
+            margin: 15px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.2);
+            max-width: 300px;
+        }
+        .map-controls {
+            position: absolute;
+            right: 0;
+            padding: 15px;
+            z-index: 1000;
+            background: rgba(255, 255, 255, 0.95);
+            border-radius: 8px;
+            margin: 15px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.2);
+        }
+        .control-btn {
+            display: block;
+            width: 100%;
+            padding: 10px;
+            margin: 5px 0;
+            background: #3b82f6;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            transition: background 0.3s;
+        }
+        .control-btn:hover {
+            background: #2563eb;
+        }
+        .legend {
+            background: white;
+            padding: 10px;
+            border-radius: 5px;
+            box-shadow: 0 1px 5px rgba(0,0,0,0.4);
+        }
+        .legend i {
+            width: 18px;
+            height: 18px;
+            float: left;
+            margin-right: 8px;
+            opacity: 0.7;
+        }
+        .report-form {
+            background: white;
+            padding: 15px;
+            border-radius: 8px;
+            margin-top: 10px;
+            display: none;
+        }
+    </style>
+</head>
+<body>
+    <div id="map"></div>
+    
+    <div class="map-overlay">
+        <h3>🏙️ CityPulse Urban Tracker</h3>
+        <div id="location-info">Click anywhere on the map to start</div>
+        <div id="report-form" class="report-form">
+            <h4>Report an Issue</h4>
+            <select id="issue-type" class="control-btn">
+                <option value="">Select issue type</option>
+                <option value="pothole">🕳️ Pothole</option>
+                <option value="streetlight">💡 Broken Streetlight</option>
+                <option value="graffiti">🎨 Graffiti</option>
+                <option value="trash">🗑️ Trash Accumulation</option>
+                <option value="sewage">💧 Sewage Issue</option>
+                <option value="other">❓ Other</option>
+            </select>
+            <textarea id="issue-description" placeholder="Describe the issue..." style="width: 100%; margin: 5px 0; padding: 8px; border-radius: 5px; border: 1px solid #ddd;"></textarea>
+            <select id="issue-priority" class="control-btn">
+                <option value="low">🟢 Low Priority</option>
+                <option value="medium">🟡 Medium Priority</option>
+                <option value="high">🔴 High Priority</option>
+            </select>
+            <button onclick="submitReport()" class="control-btn">Submit Report</button>
+            <button onclick="hideReportForm()" class="control-btn" style="background: #6b7280;">Cancel</button>
+        </div>
+    </div>
+
+    <div class="map-controls">
+        <button onclick="toggleLayer('reports')" class="control-btn">📋 Reports</button>
+        <button onclick="toggleLayer('alerts')" class="control-btn">🚨 Alerts</button>
+        <button onclick="toggleLayer('projects')" class="control-btn">🏗️ Projects</button>
+        <button onclick="locateUser()" class="control-btn">📍 My Location</button>
+        <button onclick="showLegend()" class="control-btn">📊 Legend</button>
+    </div>
+
+    <script>
+        // Global variables
+        let map;
+        let currentLocation = null;
+        let reportLocation = null;
+        let markers = {
+            reports: [],
+            alerts: [],
+            projects: []
+        };
+
+        // Map initialization
+        async function initMap() {
+            try {
+                // Get map configuration from backend
+                const response = await fetch('/api/map/config');
+                const config = await response.json();
+
+                // Initialize map
+                map = L.map('map').setView(config.default_center, config.default_zoom);
+
+                // Add OpenStreetMap tiles
+                L.tileLayer(config.tile_layer, {
+                    attribution: config.attribution,
+                    maxZoom: 19
+                }).addTo(map);
+
+                // Add scale control
+                L.control.scale({imperial: false}).addTo(map);
+
+                // Load initial data
+                await loadMapData();
+
+                // Setup event listeners
+                setupMapEvents();
+
+                // Add legend
+                addLegend();
+
+            } catch (error) {
+                console.error('Error initializing map:', error);
+                alert('Failed to load map. Please try again later.');
+            }
+        }
+
+        // Load map data from backend
+        async function loadMapData() {
+            try {
+                // Load reports
+                const reportsResponse = await fetch('/api/reports');
+                const reports = await reportsResponse.json();
+                addReportsToMap(reports);
+
+                // Load alerts
+                const alertsResponse = await fetch('/api/alerts');
+                const alerts = await alertsResponse.json();
+                addAlertsToMap(alerts);
+
+                // Load projects
+                const projectsResponse = await fetch('/api/infrastructure-projects');
+                const projects = await projectsResponse.json();
+                addProjectsToMap(projects);
+
+            } catch (error) {
+                console.error('Error loading map data:', error);
+            }
+        }
+
+        // Setup map event listeners
+        function setupMapEvents() {
+            // Click on map to show location info
+            map.on('click', async function(e) {
+                const latlng = e.latlng;
+                reportLocation = latlng;
+                
+                try {
+                    // Get address for clicked location
+                    const response = await fetch(`/api/map/reverse-geocode?lat=${latlng.lat}&lng=${latlng.lng}`);
+                    const locationData = await response.json();
+                    
+                    document.getElementById('location-info').innerHTML = `
+                        <strong>📍 Location:</strong> ${locationData.address}<br>
+                        <button onclick="showReportForm()" style="background: #3b82f6; color: white; border: none; padding: 8px 12px; border-radius: 5px; margin-top: 8px; cursor: pointer;">
+                            📝 Report Issue Here
+                        </button>
+                    `;
+                    
+                } catch (error) {
+                    console.error('Error getting location info:', error);
+                    document.getElementById('location-info').innerHTML = `
+                        <strong>📍 Coordinates:</strong> ${latlng.lat.toFixed(4)}, ${latlng.lng.toFixed(4)}<br>
+                        <button onclick="showReportForm()" style="background: #3b82f6; color: white; border: none; padding: 8px 12px; border-radius: 5px; margin-top: 8px; cursor: pointer;">
+                            📝 Report Issue Here
+                        </button>
+                    `;
+                }
+            });
+        }
+
+        // Add reports to map
+        function addReportsToMap(reports) {
+            clearMarkers('reports');
+            
+            reports.forEach(report => {
+                const reportIcon = L.divIcon({
+                    className: 'report-marker',
+                    html: getMarkerIcon('report', report.priority),
+                    iconSize: [25, 25],
+                    iconAnchor: [12, 12]
+                });
+                
+                const marker = L.marker([report.latitude, report.longitude], {icon: reportIcon})
+                    .addTo(map)
+                    .bindPopup(`
+                        <div style="min-width: 200px;">
+                            <h4>${getIconForType(report.type)} ${report.type}</h4>
+                            <p><strong>Description:</strong> ${report.description}</p>
+                            <p><strong>Status:</strong> ${report.status}</p>
+                            <p><strong>Priority:</strong> ${report.priority}</p>
+                            <p><strong>Reported:</strong> ${new Date(report.created_at).toLocaleDateString()}</p>
+                        </div>
+                    `);
+                
+                markers.reports.push(marker);
+            });
+        }
+
+        // Add alerts to map
+        function addAlertsToMap(alerts) {
+            clearMarkers('alerts');
+            
+            alerts.forEach(alert => {
+                if (alert.coordinates) {
+                    const alertIcon = L.divIcon({
+                        className: 'alert-marker',
+                        html: getMarkerIcon('alert', alert.severity),
+                        iconSize: [30, 30],
+                        iconAnchor: [15, 15]
+                    });
+                    
+                    const marker = L.marker([alert.coordinates.lat, alert.coordinates.lng], {icon: alertIcon})
+                        .addTo(map)
+                        .bindPopup(`
+                            <div style="min-width: 200px;">
+                                <h4>🚨 ${alert.type}</h4>
+                                <p><strong>Description:</strong> ${alert.description}</p>
+                                <p><strong>Severity:</strong> ${alert.severity}</p>
+                                <p><strong>Area:</strong> ${alert.area}</p>
+                                <p><strong>Issued:</strong> ${new Date(alert.timestamp).toLocaleDateString()}</p>
+                            </div>
+                        `);
+                    
+                    markers.alerts.push(marker);
+                }
+            });
+        }
+
+        // Add projects to map
+        function addProjectsToMap(projects) {
+            clearMarkers('projects');
+            
+            projects.forEach(project => {
+                const projectIcon = L.divIcon({
+                    className: 'project-marker',
+                    html: getMarkerIcon('project', project.status),
+                    iconSize: [28, 28],
+                    iconAnchor: [14, 14]
+                });
+                
+                const marker = L.marker([project.latitude, project.longitude], {icon: projectIcon})
+                    .addTo(map)
+                    .bindPopup(`
+                        <div style="min-width: 250px;">
+                            <h4>🏗️ ${project.name}</h4>
+                            <p><strong>Type:</strong> ${project.type}</p>
+                            <p><strong>Status:</strong> ${project.status}</p>
+                            <p><strong>Progress:</strong> ${project.progress}%</p>
+                            <p><strong>Budget:</strong> ${project.budget}</p>
+                            <p><strong>Description:</strong> ${project.description}</p>
+                            <p><strong>Contractor:</strong> ${project.contractor}</p>
+                        </div>
+                    `);
+                
+                markers.projects.push(marker);
+            });
+        }
+
+        // Get appropriate marker icon
+        function getMarkerIcon(type, status) {
+            const colors = {
+                report: {low: '🟢', medium: '🟡', high: '🔴'},
+                alert: {low: '🟢', medium: '🟡', high: '🔴', urgent: '⚫'},
+                project: {planned: '🔵', in_progress: '🟠', completed: '🟢', delayed: '🔴'}
+            };
+            
+            const icons = {
+                report: '📋',
+                alert: '🚨', 
+                project: '🏗️'
+            };
+            
+            const color = colors[type][status] || '🔵';
+            return `<div style="font-size: 20px;">${color}${icons[type]}</div>`;
+        }
+
+        function getIconForType(type) {
+            const icons = {
+                pothole: '🕳️',
+                streetlight: '💡',
+                graffiti: '🎨',
+                trash: '🗑️',
+                sewage: '💧',
+                other: '❓'
+            };
+            return icons[type.toLowerCase()] || '📋';
+        }
+
+        // Show report form
+        function showReportForm() {
+            document.getElementById('report-form').style.display = 'block';
+            document.getElementById('location-info').style.display = 'none';
+        }
+
+        // Hide report form
+        function hideReportForm() {
+            document.getElementById('report-form').style.display = 'none';
+            document.getElementById('location-info').style.display = 'block';
+        }
+
+        // Submit report
+        async function submitReport() {
+            const type = document.getElementById('issue-type').value;
+            const description = document.getElementById('issue-description').value;
+            const priority = document.getElementById('issue-priority').value;
+            
+            if (!type || !description) {
+                alert('Please select an issue type and provide a description');
+                return;
+            }
+            
+            try {
+                const response = await fetch('/api/reports', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${localStorage.getItem('token') || 'demo'}`
+                    },
+                    body: JSON.stringify({
+                        type: type,
+                        description: description,
+                        priority: priority,
+                        latitude: reportLocation.lat,
+                        longitude: reportLocation.lng
+                    })
+                });
+                
+                if (response.ok) {
+                    alert('Report submitted successfully!');
+                    hideReportForm();
+                    // Reload reports
+                    const reportsResponse = await fetch('/api/reports');
+                    const reports = await reportsResponse.json();
+                    addReportsToMap(reports);
+                } else {
+                    throw new Error('Failed to submit report');
+                }
+            } catch (error) {
+                console.error('Error submitting report:', error);
+                alert('Failed to submit report. Please try again.');
+            }
+        }
+
+        // Locate user
+        function locateUser() {
+            if (navigator.geolocation) {
+                navigator.geolocation.getCurrentPosition(
+                    (position) => {
+                        currentLocation = {
+                            lat: position.coords.latitude,
+                            lng: position.coords.longitude
+                        };
+                        map.setView(currentLocation, 15);
+                        
+                        // Add user location marker
+                        if (window.userLocationMarker) {
+                            map.removeLayer(window.userLocationMarker);
+                        }
+                        window.userLocationMarker = L.marker(currentLocation, {
+                            icon: L.divIcon({
+                                className: 'user-marker',
+                                html: '📍',
+                                iconSize: [30, 30],
+                                iconAnchor: [15, 30]
+                            })
+                        }).addTo(map).bindPopup('Your current location').openPopup();
+                    },
+                    (error) => {
+                        alert('Unable to get your location: ' + error.message);
+                    }
+                );
+            } else {
+                alert('Geolocation is not supported by your browser');
+            }
+        }
+
+        // Toggle layers
+        function toggleLayer(layer) {
+            markers[layer].forEach(marker => {
+                if (map.hasLayer(marker)) {
+                    map.removeLayer(marker);
+                } else {
+                    marker.addTo(map);
+                }
+            });
+        }
+
+        // Add legend
+        function addLegend() {
+            const legend = L.control({position: 'bottomright'});
+            legend.onAdd = function(map) {
+                const div = L.DomUtil.create('div', 'legend');
+                div.innerHTML = `
+                    <h4>Legend</h4>
+                    <p><span style="font-size: 20px;">🟢</span> Low Priority/Completed</p>
+                    <p><span style="font-size: 20px;">🟡</span> Medium Priority/In Progress</p>
+                    <p><span style="font-size: 20px;">🔴</span> High Priority/Delayed</p>
+                    <p><span style="font-size: 20px;">📋</span> Reports</p>
+                    <p><span style="font-size: 20px;">🚨</span> Alerts</p>
+                    <p><span style="font-size: 20px;">🏗️</span> Projects</p>
+                    <p><span style="font-size: 20px;">📍</span> Your Location</p>
+                `;
+                return div;
+            };
+            legend.addTo(map);
+        }
+
+        function showLegend() {
+            // Legend is already always visible in bottom right
+            alert('Legend is displayed in the bottom right corner of the map');
+        }
+
+        // Clear markers
+        function clearMarkers(type) {
+            markers[type].forEach(marker => map.removeLayer(marker));
+            markers[type] = [];
+        }
+
+        // Initialize map when page loads
+        document.addEventListener('DOMContentLoaded', initMap);
+    </script>
+</body>
+</html>
